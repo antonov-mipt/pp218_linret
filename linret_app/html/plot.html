@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plot</title>
+    <style>
+        #chart-container {
+            width: 100%;
+            max-width: 1000px;
+            height: 500px;
+            margin: auto;
+            padding-top: 20px;
+        }
+        #controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+        label, select {
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <input type="checkbox" id="autoUpdate" checked>
+        <label for="autoUpdate">Автоматическое обновление</label>
+
+        <label for="axisSelector">Канал:</label>
+        <select id="axisSelector">
+            <option value="0">Канал 1</option>
+            <option value="1">Канал 2</option>
+            <option value="2">Канал 3</option>
+            <option value="3">Канал 4</option>
+        </select>
+    </div>
+
+    <div id="chart-container">
+        <canvas id="myChart"></canvas>
+    </div>
+
+    <!-- Подключение Chart.js и js-bson -->
+    <script src="chart.js"></script>
+    <script src="bson.js"></script>
+
+    <script>
+        const ctx = document.getElementById('myChart').getContext('2d');
+        let myChart = null;
+        let seriesData = {};
+
+        const autoUpdateCheckbox = document.getElementById('autoUpdate');
+        const axisSelector = document.getElementById('axisSelector');
+
+        function connectWebSocket() {
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${wsProtocol}//${window.location.host}/ws`;
+            const socket = new WebSocket(wsUrl);
+            socket.binaryType = 'arraybuffer';
+
+            socket.onopen = () => {
+                console.log("Connected to WebSocket server.");
+            };
+
+            // Переподключение при закрытии соединения
+            socket.onclose = () => {
+                console.log("WebSocket connection closed. Attempting to reconnect...");
+                setTimeout(connectWebSocket, 1000);  // Попытка переподключения через 1 секунду
+            };
+
+            socket.onerror = (error) => {
+                console.error("WebSocket error:", error);
+                socket.close();  // Закрываем соединение в случае ошибки, чтобы вызвать onclose
+            };
+
+            socket.onmessage = (event) => {
+                if (!autoUpdateCheckbox.checked) return;
+
+                let BSON = bson().BSON
+                const data = BSON.deserialize(new Uint8Array(event.data));
+                const samples = data.samples;
+                const numAxes = data.num_axes;
+                const samplesPerSeries = data.num_samples;
+                const title = data.title;
+
+                seriesData = {};  // Очищаем старые данные перед обновлением
+
+                for (const [seriesName, binaryData] of Object.entries(samples)) {
+                    const seriesSamples = Array.from({ length: numAxes }, () => []);
+                    const dataView = new DataView(binaryData.buffer.buffer);
+
+                    for (let i = 0; i < samplesPerSeries; i++) {
+                        for (let axis = 0; axis < numAxes; axis++) {
+                            const offset = (i * numAxes + axis) * 3;
+                            const value = ((dataView.getUint8(offset) << 16) |
+                                        (dataView.getUint8(offset + 1) << 8) |
+                                        dataView.getUint8(offset + 2));
+                            const signedValue = (value & 0x800000) ? value - 0x1000000 : value;
+                            seriesSamples[axis].push(20*signedValue/(1<<23));
+                        }
+                    }
+                    seriesData[seriesName] = seriesSamples;
+                }
+
+                // Обновляем график с данными для выбранной оси
+                updateChart(title, samplesPerSeries, seriesData);
+            };
+        };
+
+        connectWebSocket();
+        
+        const seriesColors = {};
+        
+        function updateChart(title, n_samples, seriesData) {
+            const selectedAxis = parseInt(axisSelector.value, 10); // Получаем индекс выбранной оси
+            const labels = Array.from({ length: n_samples }, (_, i) => i);
+        
+            // Формируем данные для графика на основе выбранной оси
+            const datasets = Object.entries(seriesData).map(([seriesName, samples], index) => {
+                // Если цвет серии еще не задан, назначаем его
+                if (!seriesColors[seriesName]) {
+                    seriesColors[seriesName] = `hsl(${index * 40}, 70%, 50%)`;
+                }
+        
+                return {
+                    label: seriesName,
+                    data: samples[selectedAxis],
+                    borderColor: seriesColors[seriesName],
+                    borderWidth: 1,
+                    fill: false,
+                    pointRadius: 0, // Убираем точки (радиус 0)
+                    tension: 0 // Убираем сглаживание
+                };
+            });
+        
+            if (myChart) {
+                // Если график уже создан, обновляем данные
+                myChart.data.labels = labels;
+                myChart.data.datasets = datasets;
+                myChart.options.plugins.title.text = title; // Обновляем заголовок графика
+                myChart.update();
+            } else {
+                // Создаем новый график при первом запуске
+                myChart = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels, datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: false, // Отключаем анимацию
+                        plugins: {
+                            legend: { display: true, position: 'top' },
+                            title: { display: true, text: title }
+                        },
+                        scales: {
+                            x: { display: true }, // Убираем подпись оси X
+                            y: { display: true }  // Убираем подпись оси Y
+                        }
+                    }
+                });
+            }
+        }
+
+        // Обработчик изменения оси
+        axisSelector.addEventListener('change', updateChart);
+    </script>
+</body>
+</html>

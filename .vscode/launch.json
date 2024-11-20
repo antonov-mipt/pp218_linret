@@ -1,0 +1,22 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "LINRET SUDO DEBUG",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "/home/ntcmg/linret/linret_app/main.py",
+            "console": "integratedTerminal",
+            "sudo": true,
+            "args": [
+                "-c",
+                "/home/ntcmg/linret/config.json",
+                "-l",
+                "1"
+            ]
+        }
+    ]
+}

@@ -1,0 +1,14 @@
+[Unit]
+Description=Linret Service
+After=network.target
+
+[Service]
+ExecStart=/home/ntcmg/linret/.venv/bin/python \
+        /home/ntcmg/linret/linret_app/main.py \
+        -c /home/ntcmg/linret/config.json \
+        -l 1
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

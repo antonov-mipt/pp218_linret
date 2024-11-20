@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дебаг</title>
+    <style>
+        button {
+            margin: 5px;
+            padding: 10px;
+        }
+        #output {
+            margin-top: 20px;
+            width: 100%;
+            height: 1000px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            white-space: pre-wrap; /* для отображения форматированного JSON */
+        }
+    </style>
+</head>
+<body>
+    
+    <button id="get_chas">IF_CHASSIS</button>
+    <button id="get_core">CORE</button>
+    <button id="get_cs">IF_CS</button>
+    <button id="get_stream">STREAM</button>
+    <button id="get_chrony">CHRONY</button>
+    
+
+    <div id="output"></div>
+
+    <script>
+        document.getElementById('get_chas').addEventListener('click', function() {
+            fetch('chassis')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    document.getElementById('output').textContent = 'Ошибка: ' + error;
+                });
+        });
+
+        document.getElementById('get_core').addEventListener('click', function() {
+            fetch('core')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    document.getElementById('output').textContent = 'Ошибка: ' + error;
+                });
+        });
+
+        document.getElementById('get_cs').addEventListener('click', function() {
+            fetch('cs')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    document.getElementById('output').textContent = 'Ошибка: ' + error;
+                });
+        });
+
+        document.getElementById('get_stream').addEventListener('click', function() {
+            fetch('stream')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    document.getElementById('output').textContent = 'Ошибка: ' + error;
+                });
+        });
+
+        document.getElementById('get_chrony').addEventListener('click', function() {
+            fetch('chrony')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    document.getElementById('output').textContent = 'Ошибка: ' + error;
+                });
+        });
+
+    </script>
+</body>
+</html>
