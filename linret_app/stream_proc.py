@@ -86,6 +86,8 @@ class STREAM_INTERFACE_JOB:
         self.start_ack_recvd = False
         self.data_recvd = False
         self.stop_ack_recvd = False
+        self.db_write_time = None
+        self.db_index_time = 0
         self.stored_data = dict()
         self.joined_data = dict()
 
@@ -148,7 +150,9 @@ class STREAM_INTERFACE_JOB:
         if self.state is JOB_IFACE_STATE.FINISHED:
             if self.data_to_db and (self.data_collection is not None):
                 try:
+                    db_write_start = time.monotonic()
                     self.data_collection.insert_many(self.data_to_db)
+                    self.db_write_time = int((time.monotonic() - db_write_start)*1000)
                 except Exception as e:
                     self.log.warning(f'DB insert_many exception {repr(e)}')
                 self.data_to_db = None
@@ -183,6 +187,7 @@ class STREAM_INTERFACE_JOB:
                     self.data_to_db.append(post)
 
                     try:
+                        start = time.monotonic()
                         self.time_cache_collection.update_one(
                             {"serial": int_mac}, 
                             {"$max": {
@@ -190,6 +195,7 @@ class STREAM_INTERFACE_JOB:
                                 }
                             }
                             , upsert=True)
+                        self.db_index_time += int((time.monotonic() - start)*1000)
                     except Exception as e:
                         self.log.warning(f'DB update_one exception {repr(e)}')
 
@@ -236,6 +242,7 @@ class STREAM_INTERFACE_JOB:
                  {'txt':'RATE'},{'txt':'N'},
                  {'txt':'RECV_PACKS'},
                  {'txt':'START'},{'txt':'RECV'},{'txt':'STOP'},
+                 {'txt':'DB IDX'}, {'txt':'DB_DATA'}
                  ]
     
     def generate_stats(self):
@@ -261,7 +268,8 @@ class STREAM_INTERFACE_JOB:
             {'txt':recv_packs,'color':color},
             lat(self.start_ack_recvd, self.start_wait_time, STREAM_INTERFACE_JOB.WAIT_START_TIMEOUT_MS),
             lat(self.data_recvd, self.data_wait_time, STREAM_INTERFACE_JOB.WAIT_DATA_TIMEOUT_MS),
-            lat(self.stop_ack_recvd, self.stop_wait_time, STREAM_INTERFACE_JOB.WAIT_STOP_TIMEOUT_MS)
+            lat(self.stop_ack_recvd, self.stop_wait_time, STREAM_INTERFACE_JOB.WAIT_STOP_TIMEOUT_MS),
+            {'txt':f'{str(self.db_index_time)}ms'}, {'txt':f'{str(self.db_write_time)}ms'}
         ]
 
 class STREAM_JOB:
@@ -381,6 +389,7 @@ class LINRET_STREAMREADER:
                     self.log.warning(f'Connected to DB {self.db_config["url"]}')
                 self.db_connected = True
             except pymongo.errors.ConnectionFailure:
+                self.log.error("Connection to DB error")
                 if self.db_connected: self.log.error("Connection to DB lost")
                 self.db_connected = False
 
@@ -406,6 +415,7 @@ class LINRET_STREAMREADER:
         except queue.Full: self.dbg_stats['queue_full_drops'] += 1
 
     def job_scheduler(self, now):
+        #print("1")
         if (now - self.last_job_call_time) < LINRET_STREAMREADER.JOB_CALL_MIN_INTERVAL:
             return
         else: self.last_job_call_time = now
@@ -419,10 +429,11 @@ class LINRET_STREAMREADER:
         delay_ok = (now > (self.last_job_finish_time + self.delay_between_requests))
         if (not self.active_job) and self.jobs_queue and delay_ok:
             abs_time = self.true_time.get_true_time()
+            #print("CCC")
             if abs_time is not None:
                 if (abs_time - self.jobs_queue[0].timestamp) > self.delay_before_request:
                     self.active_job = self.jobs_queue.popleft()
-                    #self.log.debug(f'{self.active_job.timestamp}:{abs_time - self.active_job.timestamp}')
+                    self.log.debug(f'{self.active_job.timestamp}:{abs_time - self.active_job.timestamp}')
                     if self.db_connected: self.active_job.append_db(self.db, self.db_config)
                     self.active_job.work(now)
                     self.send_to_core('job_active')

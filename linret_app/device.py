@@ -68,10 +68,16 @@ class CHASSIS:
             self.send_and_update_random_id(packet)
 
         if self.srm_state is not None:
-            if self.time_to_kill(now, self.srm_state):
-                self.srm_state = None
+            #if self.time_to_kill(now, self.srm_state):
+            #    self.srm_state = None
+            pass
 
         if not job_is_active:
+
+            if not self.srm_fat_state and self.srm_state:
+                packet = CHA_SRM_TABLE_REQUEST(self.if_type, self.addr, self.random_id)
+                self.send_and_update_random_id(packet)
+        
             if (self.srm_state is None) or self.time_to_request(now, self.srm_state):
                 packet = CHA_SRM_STATUS_REQUEST(self.if_type, self.addr, self.random_id)
                 self.send_and_update_random_id(packet)
@@ -84,9 +90,7 @@ class CHASSIS:
                 packet = CHA_DISCOVERY_REQUEST(self.if_type, self.addr, self.random_id)
                 self.send_and_update_random_id(packet)
 
-            if not self.srm_fat_state and self.srm_state:
-                packet = CHA_SRM_TABLE_REQUEST(self.if_type, self.addr, self.random_id)
-                self.send_and_update_random_id(packet)
+
 
         return 'OK'
 
@@ -115,6 +119,7 @@ class CHASSIS:
         return 'OK'
     
     def stop_if_nesessary(self, true_time):
+        if not self.srm_state: return 'error'
         if not self.srm_state.acq_running: return 'OK'
         if self.srm_state is None: return 'error'
 
@@ -163,6 +168,7 @@ class CHASSIS:
                     #time_offset = time.time() - delay - self.cha_state.curr_time
                     #print(time_offset)
                     self.stats['lats'].update({now:delay*1000})
+                    
             elif response.hdr.msg_type == CHA_MSG_TYPE.SRM_STAT_ACK:
                 if response.hdr.nak_code != CHA_NAK_CODE.NO_ERROR:
                     self.log.warning(f'{request} {response.hdr.nak_code.name}')

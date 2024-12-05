@@ -25,8 +25,9 @@ class LINRET_CORE:
         self.last_discover_time = 0
         self.last_sync_time = 0
         self.last_acq_ctl_time = 0
-        self.next_job_schedule = 0
-        self.job_schedule_run = time.monotonic() + 3
+        self.next_job_schedule = None
+        self.job_schedule_run = 0
+
         self.job_active = False
         self.next_stats_send = 0
         self.max_addr = dict()
@@ -71,6 +72,9 @@ class LINRET_CORE:
         if self.adc_config is None: return
 
         abs_time = int(true_time)
+        if not self.next_job_schedule: 
+            self.next_job_schedule = int(true_time) + 30
+            return
         if abs_time < self.next_job_schedule: return
         self.next_job_schedule = abs_time + 1
 
@@ -85,6 +89,7 @@ class LINRET_CORE:
 
         if self.auto_request_data and active_devs: 
             job = STREAM_JOB(self.send_to_chassis, self.send_to_mon, abs_time, self.adc_config, active_devs)
+            #print("BBB")
             self.send_to_str(job)
 
     def acq_controller(self, mono_time, true_time):
@@ -288,7 +293,8 @@ class LINRET_CORE:
                     if request.acq_state is CS_ACQ_STATE.IDLE:
                         result = dev.stop_if_nesessary()
                     elif request.acq_state is CS_ACQ_STATE.RUNNING:
-                        result = dev.run_if_nesessary(self.adc_config)
+                        #result = dev.run_if_nesessary(self.adc_config)
+                        result = 'OK'
                     if result == 'OK': 
                         response = CS_ACK_NAK_RESPONSE(resp_hdr, CS_ACK_CODE.ACK)
                     self.log.warning(f'Acquisition[{dev}][{request.acq_state.name}][{result}]')

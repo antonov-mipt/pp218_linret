@@ -1,6 +1,6 @@
 import serial, pynmea2, time, datetime, threading, logging
 
-ALLOWED_OFFSET_FROM_SYS_TIME_MS = 100 # set to None to disable comparison
+ALLOWED_OFFSET_FROM_SYS_TIME_MS = None # set to None to disable comparison
 NMEA_OFFSET = 0.14
 
 class GPS_TIME:
@@ -35,8 +35,9 @@ class GPS_TIME:
         except: 
             return 
         
-        if (qual < 2) or (numsats < 2): return
+        if (qual < 1) or (numsats < 2): return
 
+        #print("AAA")
         return self.unix_time
         
 

@@ -127,7 +127,8 @@ class IFACE_CHASSIS:
                 if hdr.nak_code is CHA_NAK_CODE.NO_ERROR:
                     retval = CHA_SRM_STATUS_RESPONSE(hdr, payload_bytes)
                 else:
-                    self.log.debug(f'RECV:{hdr}')
+                    #self.log.debug(f'RECV:{hdr}')
+                    pass
 
             elif hdr.msg_type is CHA_MSG_TYPE.CNTL_NODES_BC_ACK:
                 if hdr.nak_code is CHA_NAK_CODE.NO_ERROR:
@@ -150,6 +151,7 @@ class IFACE_CHASSIS:
             else:
                 retval = CHA_RESPONSE(hdr)
                 self.log.debug(f'RECV:{hdr}')
+
         #except Exception as e:
         #    self.dbg_stats['un_serialize_errors'] += 1
         #    self.log.error(f"UN-Serialize {hdr.msg_type.name} exception :\n\t{repr(e)}")
