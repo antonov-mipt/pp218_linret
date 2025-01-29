@@ -86,6 +86,7 @@ class UNI_ADC_CFG:
         next(packer)
         packer.send((SRM_DATARATE[self.adc_datarate.name], 2))
         packer.send((0, 14))
+        #print(self.ch_mask)
         for i in range(4): packer.send((int(self.ch_mask[i]), 1))
         for i in range(4): self.code = packer.send((self.gains[i], 3))
         return struct.pack(UNI_ADC_CFG.SRM_ADC_CFG_DATASTRUCT, self.code)

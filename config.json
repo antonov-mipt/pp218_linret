@@ -4,7 +4,7 @@
     "lr_number": 1,
     "web_ui_port": 8000,
     "latest_adc_config": {
-        "datarate": 1000,
+        "datarate": 500,
         "ch_mask": [
             1,
             1,
@@ -22,7 +22,7 @@
     "chassis_mac": "707032313800",
     "cs_port": 56987,
     "db_config": {
-        "url": "mongodb://192.168.1.57:27017",
+        "url": "mongodb://192.168.2.50:27017",
         "__url": "mongodb://192.168.2.50:27017",
         "db_name": "lr_data",
         "data_collection": "node_data",
@@ -31,16 +31,16 @@
     "nodes_discover_period": 0.4,
     "max_nodes_per_interface": {
         "LOCAL": 1,
-        "WIFI_0": 16,
+        "WIFI_0": 0,
         "WIFI_1": 0,
         "WIRED_0": 15,
-        "WIRED_1": 0
+        "WIRED_1": 15
     },
     "node_timeouts": {
         "node_total_lifetime": 20,
-        "packet_wait_timeout": 0.2,
-        "packet_lifetime": 0.7
+        "packet_wait_timeout": 0.15,
+        "packet_lifetime": 0.9
     },
-    "delay_between_requests": 0.15,
-    "delay_before_request": 2.4
+    "delay_between_requests": 0.1,
+    "delay_before_request": 3.5
 }

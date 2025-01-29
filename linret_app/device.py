@@ -174,6 +174,8 @@ class CHASSIS:
                     self.log.warning(f'{request} {response.hdr.nak_code.name}')
                 else: 
                     self.srm_state = response
+                    #self.log.info(self)
+                    #self.log.info(self.srm_state.adc_params)
                     #print(time.time() - self.srm_state.unix_timestamp)
                     
             elif response.hdr.msg_type == CHA_MSG_TYPE.CNTL_NODES_BC_ACK:
@@ -289,6 +291,9 @@ class CHASSIS:
                 lost_txt = '---'
             else: 
                 loss = sum(self.stats['rx'].values())/len(self.stats['rx'])
+                good = 1 - loss
+                good = good ** (1/self.addr)
+                loss = 1 - good
                 lost_txt = str(int(loss*100)) + '%'
 
             if len(s['lats']) == 0: 

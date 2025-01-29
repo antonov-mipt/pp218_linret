@@ -20,6 +20,7 @@ class LINRET_CORE:
         self.serial = CS_SN(CS_DEV_TYPE.LR, 0, 0)
         self.log.info(f"Self CSERIAL: {bytes(self.serial).hex()}")
         self.adc_config = self.program_params.get_latest_adc_config()
+        self.log.warning(str(self.adc_config))
         self.update_period = 0.2
         self.last_timeout_check_time = 0
         self.last_discover_time = 0

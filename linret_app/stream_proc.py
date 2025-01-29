@@ -22,7 +22,7 @@ class JOB_IFACE_STATE(enum.Enum):
     FINISHED = enum.auto()
 
 class STREAM_INTERFACE_JOB:
-    WAIT_START_TIMEOUT_MS = 100
+    WAIT_START_TIMEOUT_MS = 200
     WAIT_STOP_TIMEOUT_MS = 100
     WAIT_DATA_TIMEOUT_MS = 1500
     rand_id_ctr = 0
@@ -92,6 +92,7 @@ class STREAM_INTERFACE_JOB:
         self.joined_data = dict()
 
         self.data_to_db = list()
+        self.time_to_db = list()
         self.db = None
         self.data_collection = None
         self.time_cache_collection = None
@@ -157,6 +158,18 @@ class STREAM_INTERFACE_JOB:
                     self.log.warning(f'DB insert_many exception {repr(e)}')
                 self.data_to_db = None
 
+            if self.time_to_db and (self.data_collection is not None):
+                start = time.monotonic() 
+                for int_mac in self.time_to_db:
+                    try:
+                        self.time_cache_collection.update_one(
+                            {"serial": int_mac}, 
+                            {"$max": { "time_start": self.bson_time_start}}, 
+                            upsert=True)
+                    except Exception as e:
+                        self.log.warning(f'DB update_one exception {repr(e)}')
+                self.db_index_time += int((time.monotonic() - start)*1000)
+                self.time_to_db = None
 
     
     def store_data(self, packet:STREAM_DATA_RESPONSE):
@@ -184,20 +197,26 @@ class STREAM_INTERFACE_JOB:
                         "data": result
                     }
 
-                    self.data_to_db.append(post)
+                    #post_time = (
+                    #    {"serial": int_mac},
+                    #    {"$max": {"time_start": self.bson_time_start}}
+                    #)
 
-                    try:
-                        start = time.monotonic()
-                        self.time_cache_collection.update_one(
-                            {"serial": int_mac}, 
-                            {"$max": {
-                                "time_start": self.bson_time_start
-                                }
-                            }
-                            , upsert=True)
-                        self.db_index_time += int((time.monotonic() - start)*1000)
-                    except Exception as e:
-                        self.log.warning(f'DB update_one exception {repr(e)}')
+                    self.data_to_db.append(post)
+                    self.time_to_db.append(int_mac)
+
+                    #try:
+                    #    start = time.monotonic()
+                    #    self.time_cache_collection.update_one(
+                    #        {"serial": int_mac}, 
+                    #        {"$max": {
+                    #            "time_start": self.bson_time_start
+                    #            }
+                    #        }
+                    #        , upsert=True)
+                    #    self.db_index_time += int((time.monotonic() - start)*1000)
+                    #except Exception as e:
+                    #    self.log.warning(f'DB update_one exception {repr(e)}')
 
                 
                 #self.log.info(f'[{self.timestamp}] [{sn}] recvd {len(result)} bytes')
