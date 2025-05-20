@@ -40,7 +40,7 @@ class CHASSIS:
     def send_and_update_random_id(self, request):
         self.random_id += 1
         if self.random_id == 256: self.random_id = 0
-        #self.log.debug(f"{str(self)} sendig {request}")
+        #self.log.debug(f"{str(self)} sendig {msg_type}")
         self.pending_requests.append(request)
         self.request_to_chassis(request)
 
@@ -79,9 +79,8 @@ class CHASSIS:
                 self.send_and_update_random_id(packet)
         
             if (self.srm_state is None) or self.time_to_request(now, self.srm_state):
-                if self.cha_state.state_srm_connected:
-                    packet = CHA_SRM_STATUS_REQUEST(self.if_type, self.addr, self.random_id)
-                    self.send_and_update_random_id(packet)
+                packet = CHA_SRM_STATUS_REQUEST(self.if_type, self.addr, self.random_id)
+                self.send_and_update_random_id(packet)
 
             if (self.srm_state is not None) and (not self.was_in_stopped_state):
                 if self.srm_state.acq_running: self.acq_stop_cmd()
@@ -161,7 +160,6 @@ class CHASSIS:
             self.stats['rx'].update({now:0})
 
             if response.hdr.msg_type == CHA_MSG_TYPE.CNTL_STAT_ACK:
-                #if self.addr > 10: self.log.warning(f'{self} STATE: {response} ')
                 if response.hdr.nak_code != CHA_NAK_CODE.NO_ERROR:
                     self.log.warning(f'{request} {response.hdr.nak_code.name}')
                 else:
@@ -173,7 +171,7 @@ class CHASSIS:
                     
             elif response.hdr.msg_type == CHA_MSG_TYPE.SRM_STAT_ACK:
                 if response.hdr.nak_code != CHA_NAK_CODE.NO_ERROR:
-                    self.log.warning(f'SRM REQUEST ERR {request} {response.hdr.nak_code.name}')
+                    self.log.warning(f'{request} {response.hdr.nak_code.name}')
                 else: 
                     self.srm_state = response
                     #self.log.info(self)

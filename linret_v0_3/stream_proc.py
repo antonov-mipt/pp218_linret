@@ -452,8 +452,9 @@ class LINRET_STREAMREADER:
             if abs_time is not None:
                 if (abs_time - self.jobs_queue[0].timestamp) > self.delay_before_request:
                     self.active_job = self.jobs_queue.popleft()
-                    #self.log.debug(f'{self.active_job.timestamp}:{abs_time - self.active_job.timestamp}')
-                    if self.db_connected: self.active_job.append_db(self.db, self.db_config)
+                    self.log.debug(f'{self.active_job.timestamp}:{abs_time - self.active_job.timestamp}')
+                    #if self.db_connected: 
+                    self.active_job.append_db(self.db, self.db_config)
                     self.active_job.work(now)
                     self.send_to_core('job_active')
 
@@ -462,7 +463,7 @@ class LINRET_STREAMREADER:
 
         while True:
             now = time.monotonic()
-            self.try_connect_to_db(now)
+            #self.try_connect_to_db(now)
             self.stats_sender(now)
             self.job_scheduler(now)
 
